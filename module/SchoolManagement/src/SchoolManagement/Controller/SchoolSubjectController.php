@@ -73,10 +73,7 @@ class SchoolSubjectController extends AbstractEntityActionController
                     $subject->setParent($parent);
                     $em->persist($subject);
                     $em->flush();
-
-                    $subject = new Subject();
-                    $form = new SubjectForm($em);
-                    $form->bind($subject);
+                    
                     return new ViewModel(array(
                         'message' => "Disciplina cadastrada com sucesso!",
                         'form' => $form,
@@ -167,7 +164,7 @@ class SchoolSubjectController extends AbstractEntityActionController
 
                         $em->merge($subject);
                         $em->flush();
-                        $this->redirect()->toRoute('school-management/school-subject', array('action' => 'index'));
+                        return $this->redirect()->toRoute('school-management/school-subject', array('action' => 'index'));
                     }
                 }
                 return new ViewModel(array(

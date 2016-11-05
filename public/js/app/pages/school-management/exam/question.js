@@ -9,9 +9,65 @@ define(['jquery', 'datatable', 'mathjax'], function () {
 
         var questionTable = $('#question-table');
 
+        /*
+         * Retorna o código HTML da área onde serão exibidas as alternativas 
+         * da questão
+         * 
+         * @param {array} alternatives - alternativas da questão
+         * @param {int} correctAlternative - índice da alternativa correta
+         * @returns {String}
+         */
+        formatAlternatives = function (alternatives, correctAlternative) {
+            var html = '<div class="row">' +
+                '<div class="col-md-12">' + 
+                    '<strong>Alternativas</strong><br>';
+                    for (var i = 0; i < alternatives.length; ++i) {
+                        html += '<span class="' + ((correctAlternative === i) ? 'text-green' : '') + 
+                                ' pull-left" style="padding-right: 5px"> &#' + (9398 + i) + ';</span> ' + 
+                                alternatives[i] + '<br>';
+                    }
+                html += '</div>' +
+            '</div>';
+            return html;
+        };
+
+        /*
+         *  Listeners da tabela de questões
+         */
+        initDatatableListeners = function () {
+            // Exibe as alternativas da questão
+            $('#question-table tbody').on('click', 'td.details-control', function () {
+                var tr = $(this).closest('tr');
+                var row = questionTable.DataTable().row(tr);
+                
+                if (row.child.isShown()) {
+                    row.child.hide();
+                    tr.removeClass('shown');
+                } else {
+                    row.child(row.data().child).show();
+                    tr.addClass('shown');
+                }
+            });
+            
+            // Recarrega a tabela de questões quando se clica no botão de buscar
+            $('button[name=submit]').click(function () {
+                questionTable.DataTable().ajax.reload();
+            });
+        };
+
+        /*
+         * Cria e carrega a tabela de questões de acordo com os filtros 
+         * selecionados (disciplina e tipo de questão)
+         */
         initDataTable = function () {
             questionTable.DataTable({
                 dom: 'lftip',
+                columnDefs: [{
+                    targets: 0,
+                    className: 'details-control',
+                    orderable: false
+                }],
+                order: [],
                 ajax: {
                     url: "/school-management/school-exam/get-questions",
                     type: "POST",
@@ -30,24 +86,26 @@ define(['jquery', 'datatable', 'mathjax'], function () {
                                     "id": "question-" + data[i].questionId,
                                     "data-id": data[i].questionId
                                 },
-                                0: data[i].questionId,
+                                0: '',
                                 1: data[i].questionEnunciation,
-                                2: data[i].questionAnswersStr
+                                child: formatAlternatives(data[i].questionAlternatives, 
+                                        data[i].questionCorrectAlternative)
                             });
                         }
 
                         return questions;
                     }
+                },
+                drawCallback: function (settings) {
+                    MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
                 }
-            });
-            $('button[name=submit]').click(function () {
-                questionTable.DataTable().ajax.reload();
             });
         };
 
         return {
             init: function () {
                 initDataTable();
+                initDatatableListeners();
             },
             getCallbackOf: function (element) {
 
